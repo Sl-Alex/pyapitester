@@ -33,6 +33,10 @@ if __name__ == '__main__':
         logging.error(f'Environment not found: "{args.env}"')
         exit(errno.ENOENT)
 
+    if (args.env is not None) and (os.path.splitext(args.env)[1] != '.env'):
+        logging.error(f'Environment file should have *.env extension')
+        exit(errno.ENOENT)
+
     app_vars: AppVars = AppVars(args.env)
 
     # Check if the path is a file or a directory
