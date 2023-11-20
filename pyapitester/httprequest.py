@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Union, List
+from typing import Dict, Optional, List
 import time
 from enum import Enum
 import sys
@@ -93,8 +93,14 @@ class HttpRequest:
     PostRequestFile: str
     """A script file that will be executed before sending the request"""
 
+    Source: str
+    """Original content of the request file"""
+
     def __init__(self, filename: str):
         self.Path = filename
+
+        with open(filename, "r") as f:
+            self.Source = f.read()
 
     def prepare(self, app_vars: AppVars):
         self.Headers = {}
@@ -107,9 +113,10 @@ class HttpRequest:
         self.PostRequestScript = ''
         self.PostRequestFile = ''
         self.Body = HttpRequest.HttpBody()
-        self.__load_from_file(self.Path, app_vars)
+        self.__reload(app_vars)
 
-    def __wrap_user_script(self, name: str, script: str) -> str:
+    @staticmethod
+    def __wrap_user_script(name: str, script: str) -> str:
         # Wrap in a one-time loop so that the user could break out
         # Also wrap in an exception handler to report an error to the user
         script = ("try:\n" +
@@ -122,14 +129,12 @@ class HttpRequest:
 
         return script
 
-    def __load_from_file(self, filename: str, app_vars: AppVars) -> None:
+    def __reload(self, app_vars: AppVars) -> None:
 
-        logging.debug(f'Parsing {filename}')
+        AppLogger.log(f'Parsing {self.Path}', logging.DEBUG)
 
-        with open(filename, "r") as f:
-            data = f.read()
-            data = app_vars.replace_vars(data)
-            data = tomllib.loads(data)
+        data = app_vars.replace_vars(self.Source)
+        data = tomllib.loads(data)
 
         # Request section must be there
         if "request" not in data:
@@ -137,33 +142,33 @@ class HttpRequest:
 
         # Get the URL
         if "url" not in data["request"]:
-            logging.warning('URL is missing in the "request" table, using empty one')
+            AppLogger.log('URL is missing in the "request" table, using empty one', logging.WARNING)
             self.Url = ''
         else:
             self.Url = data["request"]["url"]
-            logging.debug(f'request.url = "{self.Url}"')
+            AppLogger.log(f'request.url = "{self.Url}"', logging.DEBUG)
 
         # Get the method
         if "method" not in data["request"]:
             raise ValueError('Method is missing in the "request" table')
 
         self.Method = self.HttpMethod(data["request"]["method"].upper())
-        logging.debug(f'request.method = "{self.Method.name}"')
+        AppLogger.log(f'request.method = "{self.Method.name}"', logging.DEBUG)
 
         # Get the timeout
         if "timeout" not in data["request"]:
-            logging.debug('timeout is missing in the "request" table, system default will be used')
+            AppLogger.log('timeout is missing in the "request" table, system default will be used', logging.DEBUG)
             self.Timeout = None
         else:
             self.Timeout = data["request"]["timeout"] / 1000
 
-        logging.debug(f'request.timeout = {self.Timeout}')
+        AppLogger.log(f'request.timeout = {self.Timeout}', logging.DEBUG)
 
         # Check if session support is needed
         if "session" in data["request"]:
             self.Session = data["request"]["session"]
 
-        logging.debug(f'request.session = {str(self.Session).lower()}')
+        AppLogger.log(f'request.session = {str(self.Session).lower()}', logging.DEBUG)
 
         if "headers" in data:
             for header in data["headers"]:
@@ -171,7 +176,7 @@ class HttpRequest:
                 # but it is common to have them in Pascal-Case.
                 header_name = header.replace("-", " ").title().replace(" ", "-")
                 self.Headers[header_name] = data["headers"][header]
-                logging.debug(f'header: "{header_name}" = "{self.Headers[header_name]}"')
+                AppLogger.log(f'header: "{header_name}" = "{self.Headers[header_name]}"', logging.DEBUG)
 
         if "body" not in data:
             raise ValueError('"body" table is missing')
@@ -180,15 +185,15 @@ class HttpRequest:
             raise ValueError('"body.type" is missing')
 
         self.Body.Type = self.BodyType(data["body"]["type"].lower())
-        logging.debug(f'body.type = "{self.Body.Type.name}"')
+        AppLogger.log(f'body.type = "{self.Body.Type.name}"', logging.DEBUG)
 
         if self.Body.Type == self.BodyType.TEXT:
             if "text" not in data["body"]:
-                logging.warning('"text" is missing in the "body" table, although "type" is set to "text"')
+                AppLogger.log('"text" is missing in the "body" table, although "type" is set to "text"', logging.WARNING)
                 self.Body.Text = ''
             else:
                 self.Body.Text = data["body"]["text"]
-                logging.debug(f'body.text = "{self.Body.Text}"')
+                AppLogger.log(f'body.text = "{self.Body.Text}"', logging.DEBUG)
         elif self.Body.Type == self.BodyType.MULTIPART:
             multipart_keys = sorted(list(filter(lambda s: "multipart" in s, data.keys())))
             self.Body.Multipart = []
