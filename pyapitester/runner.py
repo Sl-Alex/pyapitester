@@ -7,7 +7,6 @@ from pyapitester.httprequest import HttpRequest
 from pyapitester.httpresponse import HttpResponse
 from pyapitester.helpers import AppLogger, AppVars
 import os
-import sys
 import json
 
 
@@ -25,10 +24,6 @@ class Runner:
 
     def add_request(self, request: HttpRequest):
         self.Requests.append(request)
-
-    def get_status(self):
-        # TODO: implement get_status
-        pass
 
     def run(self):
         # Always start without any session
@@ -52,7 +47,11 @@ class Runner:
             if "User-Agent" not in req.Headers:
                 req.Headers["User-Agent"] = "PyApiTester/0.1"
 
-            exec(req.PreRequestScript, None, None)
+            exec(req.PreRequestScript, {
+                "req": req,
+                "app_vars": self.AppVars,
+                "AppLogger": AppLogger
+            }, None)
 
             # If session is needed
             if req.Session:
@@ -112,5 +111,9 @@ class Runner:
             except Exception as ex:
                 res.Exception = type(ex).__name__
 
-            # print(r.json()["data"])
-            exec(req.PostRequestScript, None, None)
+            exec(req.PostRequestScript, {
+                "req": req,
+                "res": res,
+                "app_vars": self.AppVars,
+                "AppLogger": AppLogger
+            }, None)

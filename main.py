@@ -1,43 +1,43 @@
 import logging
-import sys
 import errno
 import fnmatch
 from typing import List
 
-from pyapitester import helpers
 from pyapitester.helpers import AppLogger, AppVars
 from pyapitester.httprequest import HttpRequest
 from pyapitester.runner import Runner
 import argparse
 import os
-import time
-
 
 if __name__ == '__main__':
-
-    log_level = logging.INFO
-
-    AppLogger.init_logger(level=log_level)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=['run', 'check'], help="Command to execute")
     parser.add_argument("path", help="Could be a folder or a single file")
-    parser.add_argument("--env")
+    parser.add_argument("--environment", "-e", help="Path to the environment configuration file (*.env)")
+    parser.add_argument("--verbose", "-v", action='store_true', help="Enable verbose mode")
     args = parser.parse_args()
+
+    if args.verbose:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
+
+    AppLogger.init_logger(level=log_level)
 
     if not os.path.exists(args.path):
         logging.error(f'No such file or directory: "{args.path}"')
         exit(errno.ENOENT)
 
-    if (args.env is not None) and (not os.path.exists(args.env)):
-        logging.error(f'Environment not found: "{args.env}"')
+    if (args.environment is not None) and (not os.path.exists(args.environment)):
+        logging.error(f'Environment not found: "{args.environment}"')
         exit(errno.ENOENT)
 
-    if (args.env is not None) and (os.path.splitext(args.env)[1] != '.env'):
+    if (args.environment is not None) and (os.path.splitext(args.environment)[1] != '.env'):
         logging.error(f'Environment file should have *.env extension')
         exit(errno.ENOENT)
 
-    app_vars: AppVars = AppVars(args.env)
+    app_vars: AppVars = AppVars(args.environment)
 
     # Check if the path is a file or a directory
     file_list: List[str] = []
@@ -80,7 +80,6 @@ if __name__ == '__main__':
         # Add all requests to the runner
         runner = Runner(app_vars)
         for filename in file_list_ordered:
-            print(filename)
             runner.add_request(HttpRequest(filename))
         # Run all requests
         runner.run()

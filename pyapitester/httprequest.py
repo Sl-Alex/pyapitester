@@ -3,6 +3,10 @@ import time
 from enum import Enum
 import sys
 import logging
+import re
+
+from grappa import should
+
 from pyapitester.helpers import AppVars, AppLogger
 
 if sys.version_info < (3, 11):
@@ -96,6 +100,31 @@ class HttpRequest:
     Source: str
     """Original content of the request file"""
 
+    __USER_SCRIPT_PREPEND_STRING: str = '''
+from grappa import should, expect
+import sys
+import logging
+
+def __indent(text_in: str) -> str:
+    return '        '.join(('\\n'+text_in.lstrip()).splitlines(True))
+
+def test_case(test_name):
+    def inner_decorator(f):
+        def wrapped(*args, **kwargs):
+            # Covers all exceptions in the user code
+            try:
+                f(*args, **kwargs)
+                AppLogger.log_result(True, f'Test case "{test_name}" in function {f.__name__}')
+            except Exception as ex:
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                AppLogger.log_result(False, f'Test case "{test_name}" in function {f.__name__}')
+                logging.warning(f'    Failed with "{exc_type.__name__}" at line {str(exc_tb.tb_next.tb_lineno - 23)}: {__indent(str(exc_obj))}')
+
+        return wrapped
+
+    return inner_decorator
+'''
+
     def __init__(self, filename: str):
         self.Path = filename
 
@@ -116,18 +145,32 @@ class HttpRequest:
         self.__reload(app_vars)
 
     @staticmethod
-    def __wrap_user_script(name: str, script: str) -> str:
-        # Wrap in a one-time loop so that the user could break out
-        # Also wrap in an exception handler to report an error to the user
-        script = ("try:\n" +
-                  "    for _unused_ in range(1):\n" +
-                  "        ".join(("\n" + script).splitlines(True)) + "\n" +
-                  "except Exception as ex:\n" +
-                  "    exc_type, exc_obj, exc_tb = sys.exc_info()\n" +
-                  "    AppLogger.log_result(False, f'" + name + " script in \"{req.Path}\" crashed " +
-                  "with \"{exc_type.__name__}\" at line {str(exc_tb.tb_lineno - 3)}: {str(exc_obj)}')")
+    def __wrap_user_script(script: str) -> str:
+        before = HttpRequest.__USER_SCRIPT_PREPEND_STRING
+        lines = script.splitlines(True)
+        after = ''
 
-        return script
+        found_test_case = False
+        function_list = []
+        for line in lines:
+            if line.startswith("@test_case"):
+                # Found a test case definition
+                found_test_case = True
+                continue
+
+            # Take into account only decorated functions
+            if line.startswith("def ") and found_test_case:
+                found_test_case = False
+                # Extract the function name
+                words = re.split('\\W+', line)
+                if len(words) > 1:
+                    function_list.append(words[1])
+
+        after = ''
+        for function_name in function_list:
+            after += f'{function_name}()\n'
+
+        return before + script + after
 
     def __reload(self, app_vars: AppVars) -> None:
 
@@ -189,7 +232,8 @@ class HttpRequest:
 
         if self.Body.Type == self.BodyType.TEXT:
             if "text" not in data["body"]:
-                AppLogger.log('"text" is missing in the "body" table, although "type" is set to "text"', logging.WARNING)
+                AppLogger.log('"text" is missing in the "body" table, although "type" is set to "text"',
+                              logging.WARNING)
                 self.Body.Text = ''
             else:
                 self.Body.Text = data["body"]["text"]
@@ -210,10 +254,10 @@ class HttpRequest:
 
         if "scripts" in data:
             if "pre-request" in data["scripts"]:
-                self.PreRequestScript = self.__wrap_user_script("pre-request", data["scripts"]["pre-request"])
+                self.PreRequestScript = self.__wrap_user_script(data["scripts"]["pre-request"])
             if "pre-request-file" in data["scripts"]:
                 self.PreRequestFile = data["scripts"]["pre-request-file"]
             if "post-request" in data["scripts"]:
-                self.PostRequestScript = self.__wrap_user_script("post-request",data["scripts"]["post-request"])
+                self.PostRequestScript = self.__wrap_user_script(data["scripts"]["post-request"])
             if "post-request-file" in data["scripts"]:
                 self.PostRequestFile = data["scripts"]["post-request-file"]
