@@ -1,11 +1,9 @@
 from typing import Dict, Optional, List
-import time
 from enum import Enum
 import sys
 import logging
 import re
-
-from grappa import should
+import requests
 
 from pyapitester.helpers import AppVars, AppLogger
 
@@ -82,23 +80,17 @@ class HttpRequest:
     Headers: Dict
     """A list of http headers"""
 
-    TimeStamp: float
-    """Request timestamp, to be set upon transmission"""
-
     PreRequestScript: str
     """A script that will be executed before sending the request"""
-
-    PreRequestFile: str
-    """A script file that will be executed before sending the request"""
 
     PostRequestScript: str
     """A script that will be executed after getting the response"""
 
-    PostRequestFile: str
-    """A script file that will be executed before sending the request"""
-
     Source: str
     """Original content of the request file"""
+
+    MaxRedirects: int
+    """Maximum number of redirects"""
 
     __USER_SCRIPT_PREPEND_STRING: str = '''
 from grappa import should, expect
@@ -136,7 +128,6 @@ def test_case(test_name):
         self.Name = self.Path
         self.Url = ''
         self.Session = False
-        self.TimeStamp = time.monotonic()
         self.PreRequestScript = ''
         self.PreRequestFile = ''
         self.PostRequestScript = ''
@@ -207,6 +198,15 @@ def test_case(test_name):
 
         AppLogger.log(f'request.timeout = {self.Timeout}', logging.DEBUG)
 
+        if "max_redirects" not in data["request"]:
+            AppLogger.log('max_redirects is not set in the "request" table, default ' +
+                          f'({requests.models.DEFAULT_REDIRECT_LIMIT}) will be used', logging.DEBUG)
+            self.MaxRedirects = requests.models.DEFAULT_REDIRECT_LIMIT
+        else:
+            self.MaxRedirects = data["request"]["max_redirects"]
+
+        AppLogger.log(f'request.max_redirects = {self.MaxRedirects}', logging.DEBUG)
+
         # Check if session support is needed
         if "session" in data["request"]:
             self.Session = data["request"]["session"]
@@ -255,9 +255,5 @@ def test_case(test_name):
         if "scripts" in data:
             if "pre-request" in data["scripts"]:
                 self.PreRequestScript = self.__wrap_user_script(data["scripts"]["pre-request"])
-            if "pre-request-file" in data["scripts"]:
-                self.PreRequestFile = data["scripts"]["pre-request-file"]
             if "post-request" in data["scripts"]:
                 self.PostRequestScript = self.__wrap_user_script(data["scripts"]["post-request"])
-            if "post-request-file" in data["scripts"]:
-                self.PostRequestFile = data["scripts"]["post-request-file"]

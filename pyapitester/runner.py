@@ -42,6 +42,7 @@ class Runner:
             if folder != last_folder:
                 if session is not None:
                     session.close()
+                    session = None
 
             # Put our user-agent if missing
             if "User-Agent" not in req.Headers:
@@ -63,9 +64,12 @@ class Runner:
                 # Session is not needed, close if there is one
                 if session is not None:
                     session.close()
-                rq = requests
+                    session = None
+                rq = requests.Session()
 
             res = HttpResponse()
+
+            rq.max_redirects = req.MaxRedirects
 
             if req.Body.Type == HttpRequest.BodyType.MULTIPART:
                 multipart_fields = {}
