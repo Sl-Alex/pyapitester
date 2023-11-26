@@ -1,4 +1,4 @@
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Any
 from enum import Enum
 import sys
 import logging
@@ -92,6 +92,9 @@ class HttpRequest:
     MaxRedirects: int
     """Maximum number of redirects"""
 
+    ExpectedStatuses: Optional[List] = None
+    """Expected status code or exception name. Both are in string format"""
+
     __USER_SCRIPT_PREPEND_STRING: str = '''
 from grappa import should, expect
 import sys
@@ -106,9 +109,11 @@ def test_case(test_name):
             # Covers all exceptions in the user code
             try:
                 f(*args, **kwargs)
+                AppState.add_test_result(True)
                 AppLogger.log_result(True, f'Test case "{test_name}" in function {f.__name__}')
             except Exception as ex:
                 exc_type, exc_obj, exc_tb = sys.exc_info()
+                AppState.add_test_result(False)
                 AppLogger.log_result(False, f'Test case "{test_name}" in function {f.__name__}')
                 logging.warning(f'    Failed with "{exc_type.__name__}" at line {str(exc_tb.tb_next.tb_lineno - 23)}: {__indent(str(exc_obj))}')
 
@@ -129,9 +134,7 @@ def test_case(test_name):
         self.Url = ''
         self.Session = False
         self.PreRequestScript = ''
-        self.PreRequestFile = ''
         self.PostRequestScript = ''
-        self.PostRequestFile = ''
         self.Body = HttpRequest.HttpBody()
         self.__reload(app_vars)
 
@@ -164,22 +167,26 @@ def test_case(test_name):
         return before + script + after
 
     def __reload(self, app_vars: AppVars) -> None:
+        """
+        Reload the original *.toml file
+
+        Internally the function doesn't re-open the file, but just re-applies
+        current variables to the file content.
+        """
 
         AppLogger.log(f'Parsing {self.Path}', logging.DEBUG)
 
-        data = app_vars.replace_vars(self.Source)
-        data = tomllib.loads(data)
+        data: Dict[str, Any] = tomllib.loads(app_vars.replace_vars(self.Source))
 
         # Request section must be there
         if "request" not in data:
             raise ValueError('"request" table is missing')
 
         # Get the URL
-        if "url" not in data["request"]:
+        self.Url = data["request"].get("url", '')
+        if len(self.Url) == 0:
             AppLogger.log('URL is missing in the "request" table, using empty one', logging.WARNING)
-            self.Url = ''
         else:
-            self.Url = data["request"]["url"]
             AppLogger.log(f'request.url = "{self.Url}"', logging.DEBUG)
 
         # Get the method
@@ -198,19 +205,23 @@ def test_case(test_name):
 
         AppLogger.log(f'request.timeout = {self.Timeout}', logging.DEBUG)
 
-        if "max_redirects" not in data["request"]:
+        self.MaxRedirects = data["request"].get("max_redirects")
+        if self.MaxRedirects is None:
             AppLogger.log('max_redirects is not set in the "request" table, default ' +
                           f'({requests.models.DEFAULT_REDIRECT_LIMIT}) will be used', logging.DEBUG)
             self.MaxRedirects = requests.models.DEFAULT_REDIRECT_LIMIT
-        else:
-            self.MaxRedirects = data["request"]["max_redirects"]
 
         AppLogger.log(f'request.max_redirects = {self.MaxRedirects}', logging.DEBUG)
 
-        # Check if session support is needed
-        if "session" in data["request"]:
-            self.Session = data["request"]["session"]
+        self.ExpectedStatuses = data["request"].get("expected_status")
+        if self.ExpectedStatuses is None:
+            AppLogger.log('expected_status is not set in the "request" table, by default ' +
+                          f'all responses with valid status codes will be considered as OK')
+        else:
+            AppLogger.log(f'request.expected_status = {self.ExpectedStatuses}', logging.DEBUG)
 
+        # Check if session support is needed
+        self.Session = data["request"].get("session")
         AppLogger.log(f'request.session = {str(self.Session).lower()}', logging.DEBUG)
 
         if "headers" in data:

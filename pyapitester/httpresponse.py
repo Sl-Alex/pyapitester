@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 
 class HttpResponse:
@@ -19,6 +19,11 @@ class HttpResponse:
 
     Json: Optional[Dict]
 
+    Result: bool
+
+    ResultValue: Union[int,str]
+    """Either status code or exception"""
+
     Size: int
 
     Time: int
@@ -30,3 +35,5 @@ class HttpResponse:
         self.Size = 0
         self.Json = None
         self.Time = 0
+        self.Result = True
+        self.ResultValue = ''

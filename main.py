@@ -47,6 +47,7 @@ if __name__ == '__main__':
             logging.error(f'Expected *.toml, found "{args.path}"')
             exit(errno.EINVAL)
         file_list.append(args.path)
+        folder_list.append(os.path.dirname(args.path))
     else:
         for root, dirnames, filenames in os.walk(args.path):
             for filename in fnmatch.filter(filenames, '*.toml'):

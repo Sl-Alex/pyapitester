@@ -1,5 +1,5 @@
 from string import Template
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple, List
 import sys
 import logging
 
@@ -50,7 +50,6 @@ class AppVars(object):
         All placeholders that are not in the dict, will remain untouched
 
         :param text: Input text with {{var_name}}  placeholders
-        :param data: Dictionary with "var_name" : "var_value" pairs
         :return: Input text with all placeholders replaced whenever possible
         """
 
@@ -90,10 +89,37 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 
+class AppState(object):
+    RequestsTotal: int = 0
+    RequestsOk: int = 0
+    RequestsFailed: int = 0
+
+    TestsTotal: int = 0
+    TestsOk: int = 0
+    TestsFailed: int = 0
+
+    @staticmethod
+    def add_test_result(ok: bool):
+        AppState.TestsTotal += 1
+        if ok:
+            AppState.TestsOk += 1
+        else:
+            AppState.TestsFailed += 1
+
+    @staticmethod
+    def add_request_result(ok: bool):
+        AppState.RequestsTotal += 1
+        if ok:
+            AppState.RequestsOk += 1
+        else:
+            AppState.RequestsFailed += 1
+
+
 class AppLogger(object):
     progress_step: int = 0
+    request_in_progress: bool = False
 
-    class bcolors:
+    class Colors:
         HEADER = '\033[95m'
         OKBLUE = '\033[94m'
         OKCYAN = '\033[96m'
@@ -105,18 +131,9 @@ class AppLogger(object):
         BOLD = '\033[1m'
         UNDERLINE = '\033[4m'
 
-    COLOR_HEADER: str = f'{bcolors.HEADER}'
-    RESULT_OK: str = f"{bcolors.OKGREEN}✓"
-    RESULT_FAILED: str = f"{bcolors.FAIL}✗"
-
-    # app_logger = logging.getLogger('app_logger')
-    # app_logger.setLevel(logging.DEBUG)
-    # sh = logging.StreamHandler()
-    # sh.setFormatter(logging.Formatter('%(message)s'))
-    # app_logger.addHandler(sh)
-    # app_logger.propagate = False
-    # urllib_logger = logging.getLogger("urllib3")
-    # urllib_logger.setLevel(logging.DEBUG)
+    COLOR_HEADER: str = f'{Colors.HEADER}'
+    RESULT_OK: str = f"{Colors.OKGREEN}✓"
+    RESULT_FAILED: str = f"{Colors.FAIL}✗"
 
     # progress = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
     progress = [
@@ -134,14 +151,14 @@ class AppLogger(object):
         "[ O=- ]"
     ]
 
+    log_buffer: List[Tuple[int, str]] = []
+
     @staticmethod
     def init_logger(level=logging.INFO, logger=None):
         """
-        Configures a simple console logger with the givel level.
+        Configures a simple console logger with the given level.
         A usecase is to change the formatting of the default handler of the root logger
         """
-        # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        formatter = logging.Formatter('%(message)s')
         logger = logger or logging.getLogger()  # either the given logger or the root logger
         logger.setLevel(level)
         # If the logger has handlers, we configure the first one. Otherwise we add a handler and configure it
@@ -154,21 +171,61 @@ class AppLogger(object):
         console.setLevel(level)
 
     @staticmethod
-    def __log(message: str, level: int = logging.INFO):
-        logging.log(level, message)
+    def __log(message: str, level: int = logging.INFO, log_now: bool = False):
+        if AppLogger.request_in_progress and not log_now:
+            AppLogger.log_buffer.append((level, message))
+        else:
+            logging.log(level, message)
 
     @staticmethod
     def log(message: str, level: int = logging.INFO):
         AppLogger.__log(f'    {message}', level)
-        # AppLogger.app_logger.log(level= level, msg=message)
 
     @staticmethod
-    def log_header(message: str):
-        AppLogger.__log(f'{AppLogger.COLOR_HEADER}{message}{AppLogger.bcolors.ENDC}')
+    def log_header(ok: bool, message: str, result: str):
+        logging.log(logging.INFO,f'{AppLogger.RESULT_OK if ok else AppLogger.RESULT_FAILED} ' +
+                    f'{AppLogger.Colors.OKBLUE}{message} (' +
+                    f'{AppLogger.Colors.OKGREEN if ok else AppLogger.Colors.FAIL}{result}' +
+                    f'{AppLogger.Colors.ENDC}{AppLogger.Colors.OKBLUE}){AppLogger.Colors.ENDC}')
+
+    @staticmethod
+    def log_summary():
+        logging.log(logging.INFO, f'\n{AppLogger.Colors.OKCYAN}Summary:{AppLogger.Colors.ENDC}')
+
+        req_total = str(AppState.RequestsTotal)
+        req_ok = str(AppState.RequestsOk)
+        req_failed = str(AppState.RequestsTotal - AppState.RequestsOk)
+
+        tests_total = str(AppState.TestsTotal)
+        tests_ok = str(AppState.TestsOk)
+        tests_failed = str(AppState.TestsTotal - AppState.TestsOk)
+
+        len_total = max(len(req_total), len(tests_total))
+        len_ok = max(len(req_ok), len(tests_ok))
+        len_failed = max(len(req_failed), len(tests_failed))
+
+        AppLogger.log(f'Requests: {req_total:>{len_total}}, ' +
+                      f'failed: {req_failed:>{len_failed}}, ' +
+                      f'succeeded: {req_ok:>{len_ok}}')
+
+        AppLogger.log(f'Tests:    {tests_total:>{len_total}}, ' +
+                      f'failed: {tests_failed:>{len_failed}}, ' +
+                      f'succeeded: {tests_ok:>{len_ok}}')
 
     @staticmethod
     def log_result(ok: bool, message: str):
-        AppLogger.log(f'{AppLogger.RESULT_OK if ok else AppLogger.RESULT_FAILED} {message}{AppLogger.bcolors.ENDC}')
+        AppLogger.log(f'{AppLogger.RESULT_OK if ok else AppLogger.RESULT_FAILED} {message}{AppLogger.Colors.ENDC}')
+
+    @staticmethod
+    def buffering_start():
+        AppLogger.request_in_progress = True
+
+    @staticmethod
+    def buffering_end():
+        AppLogger.request_in_progress = False
+        for log_entry in AppLogger.log_buffer:
+            logging.log(log_entry[0], log_entry[1])
+        AppLogger.log_buffer = []
 
     @staticmethod
     def update_progress():

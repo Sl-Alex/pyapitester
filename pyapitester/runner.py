@@ -5,14 +5,14 @@ import requests
 from typing import List, Optional
 from pyapitester.httprequest import HttpRequest
 from pyapitester.httpresponse import HttpResponse
-from pyapitester.helpers import AppLogger, AppVars
+from pyapitester.helpers import AppLogger, AppVars, AppState
 import os
 import json
 
 
 class Runner:
     """
-    TODO: Describe the class
+    Prepares and runs all requests, executes pre- and post-request scriptss
     """
 
     Requests: List[HttpRequest]
@@ -34,7 +34,7 @@ class Runner:
 
             req.prepare(self.AppVars)
 
-            AppLogger.log_header(f'Processing {req.Path}:')
+            AppLogger.buffering_start()
 
             folder = os.path.dirname(req.Path)
 
@@ -48,10 +48,14 @@ class Runner:
             if "User-Agent" not in req.Headers:
                 req.Headers["User-Agent"] = "PyApiTester/0.1"
 
+            if len(req.PreRequestScript) > 0:
+                AppLogger.log('Executing a pre-request script')
+
             exec(req.PreRequestScript, {
                 "req": req,
-                "app_vars": self.AppVars,
-                "AppLogger": AppLogger
+                "AppVars": self.AppVars,
+                "AppLogger": AppLogger,
+                "AppState": AppState
             }, None)
 
             # If session is needed
@@ -115,9 +119,43 @@ class Runner:
             except Exception as ex:
                 res.Exception = type(ex).__name__
 
+            # Go through expected statuses to check if response is OK
+            # TODO: By default the response is considered to be OK
+            if req.ExpectedStatuses is not None:
+                if res.Exception is not None:
+                    if res.Exception not in req.ExpectedStatuses:
+                        res.Result = False
+                        res.ResultValue = res.Exception
+                    else:
+                        res.ResultValue = res.Exception
+                else:
+                    if res.Status not in req.ExpectedStatuses:
+                        res.Result = False
+                        res.ResultValue = res.Status
+                    else:
+                        res.ResultValue = res.Status
+            else: # There are no expectation, assume any valid response is fine
+                if res.Exception is not None:
+                    res.Result = False
+                    res.ResultValue = res.Exception
+                else:
+                    res.ResultValue = res.Status
+
+            AppLogger.log_header(res.Result, f'Processing {req.Path}', str(res.ResultValue))
+
+            AppState.add_request_result(res.Result)
+
+            AppLogger.buffering_end()
+
+            if len(req.PostRequestScript) > 0:
+                AppLogger.log('Executing a post-request script')
+
             exec(req.PostRequestScript, {
                 "req": req,
                 "res": res,
-                "app_vars": self.AppVars,
-                "AppLogger": AppLogger
+                "AppVars": self.AppVars,
+                "AppLogger": AppLogger,
+                "AppState": AppState
             }, None)
+
+        AppLogger.log_summary()
