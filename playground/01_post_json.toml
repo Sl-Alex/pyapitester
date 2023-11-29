@@ -1,0 +1,86 @@
+[request]
+# Environment variables can be used everywhere in this file, they are replaced before processing.
+# They should be defined like this: {{variable_name}} and are replaced before processing the request
+
+# URL to call. Optional parameter.
+url = '{{base_url}}post' # This will result in 'http://httpbin.org/post'
+
+# Method, should be one of [OPTIONS,HEAD,POST,PUT,PATCH,DELETE]. Mandatory parameter
+method = 'POST'
+
+# Request timeout, ms. Optional parameter
+timeout = {{base_timeout}}
+
+# Maximum number of redirects. Default is 30. Zero means no redirects are allowed
+max_redirects = 0
+
+# The request is considered to be OK if either the response code or the exception are specified in the array
+# This is an optional field. If not specified then all requests without exception will be considered as OK
+expected_status = [200, "TooManyRedirects"]
+
+# Sessions are disabled unless asked explicitly
+# Any request in the chain that doesn't have "session" or "session" is set to false breaks the session
+# Sessions are valid only for requests that are in the same folder
+session = false
+
+[headers]
+# According to HTTP specification header names are case-insensitive
+# Internally we convert them to Pascal-Case, for example:
+# "cOnTeNt-tYpE" --> "Content-Type"
+# The value remains case-sensitive
+cOnTeNt-tYpE = "application/json; charset=utf-8"
+
+[body]
+# Body type, either "text" or "multipart"
+type = "text"
+text = '''
+{
+    "valid": {{test_bool}},
+    "value": {{test_int}},
+    "status": "{{test_str}}"
+}
+'''
+[scripts]
+# This section has two scripts: pre-request and post-request
+# pre-request script has access to:
+#     - req (HttpRequest object)
+#     - AppVars (Dictionary with var_name:var_value pairs)
+#     - AppLogger - log custom messages and test results
+#     - @test_case decorator for the test case functions (see examples below)
+# post-request script has access to the same set of objects, as well as to:
+#     - res (HttpResponse object) 
+pre-request = '''
+# Here you can write any python code your interpreter can execute before sending the request
+
+# For example, we test some pre-requisites ....
+@test_case("Sessions should be disabled")
+def validate_sessions():
+    expect(req.Session).to.be.false
+
+'''
+# In the post-request script you can see how test cases are implemented in a more elegant way.
+# For the response validation you can use grappa. It is already available there, no need to import
+post-request = '''
+@test_case("Validate the request")
+def validate_the_request():
+    # You can change 'None' to any other exception type if needed, e.g. 'ConnectTimeout' or 'TooManyRedirects'
+    expect(res.Exception).to.equal(None)
+    expect(res.Status).to.be.equal(200)
+    # You can use any environment variable. Everywhere.
+    expect(res.Json["json"]["value"]).to.be.equal({{test_int}})
+    expect(res.Json["json"]["valid"]).to.be.{{test_bool}}
+    expect(res.Time).to.be.less(1000)
+
+# You can define your functions (not test-case) and call them as usual
+def test_exception():
+    # This will always fail
+    expect(False).to.be.true
+    # This will never be executed because the line above is executed first
+    expect(res.Status).to.be.equal(200)
+
+@test_case("This Test Should Fail")
+def exceptional_test():
+    test_exception()
+    # You can raise any exception if you want
+    #raise FileNotFoundError("Oops, the file is lost")
+'''
