@@ -20,5 +20,10 @@ This will
 See [docs][docs] or sl-alex.net/pyapitester for more information.
 See [playground][playground] and take a look at test requests and environment.
 
+## DISCLAIMER
+
+As of now, this project is in the very early stage. I'm using it with Python 3.9 and it covers 99% all my needs.
+Any PRs are friendly welcome, I'll be happy if you find this tool useful.
+
 [docs]: docs
 [playground]: playground
