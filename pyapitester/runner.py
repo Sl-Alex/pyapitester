@@ -75,22 +75,22 @@ class Runner:
 
             rq.max_redirects = req.MaxRedirects
 
-            if req.Body.Type == HttpRequest.BodyType.MULTIPART:
-                multipart_fields = {}
-                for entry in req.Body.Multipart:
-                    if entry.Data and not entry.FileName:
-                        multipart_fields[entry.Name] = (None, entry.Data)
-                    elif entry.FileName and not entry.Data:
-                        multipart_fields[entry.Name] = (os.path.basename(entry.FileName), open(entry.FileName, 'rb+'))
-                    elif entry.FileName and entry.Data:
-                        multipart_fields[entry.Name] = (os.path.basename(entry.FileName), entry.Data)
-                    else:
-                        AppLogger.log(f'Neither "data" nor "filename" are specified for {req.Path}, section {entry.Name}')
-                        continue
-            else:
-                multipart_fields = None
-
             try:
+                if req.Body.Type == HttpRequest.BodyType.MULTIPART:
+                    multipart_fields = {}
+                    for entry in req.Body.Multipart:
+                        if entry.Data and not entry.FileName:
+                            multipart_fields[entry.Name] = (None, entry.Data)
+                        elif entry.FileName and not entry.Data:
+                            multipart_fields[entry.Name] = (os.path.basename(entry.FileName), open(entry.FileName, 'rb+'))
+                        elif entry.FileName and entry.Data:
+                            multipart_fields[entry.Name] = (os.path.basename(entry.FileName), entry.Data)
+                        else:
+                            AppLogger.log(f'Neither "data" nor "filename" are specified for {req.Path}, section {entry.Name}')
+                            continue
+                else:
+                    multipart_fields = None
+
                 r = rq.request(
                     method=req.Method.value,
                     url=req.Url,
