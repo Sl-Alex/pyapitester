@@ -15,7 +15,7 @@ This will
 
 - Find all requests in "playground"
 - Sort them in the alphabetic order.
-- Run requests one by one, first pre-request script, then the request itself, folloding by post-request
+- Run requests one by one, first pre-request script, then the request itself, following by post-request
 
 See [docs][docs] or sl-alex.net/pyapitester for more information.
 See [playground][playground] and take a look at test requests and environment.
