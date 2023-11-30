@@ -61,8 +61,8 @@ def validate_sessions():
 # In the post-request script you can see how test cases are implemented in a more elegant way.
 # For the response validation you can use grappa. It is already available there, no need to import
 post-request = '''
-@test_case("Validate the request")
-def validate_the_request():
+@test_case("Validate the response")
+def validate_the_response():
     # You can change 'None' to any other exception type if needed, e.g. 'ConnectTimeout' or 'TooManyRedirects'
     expect(res.Exception).to.equal(None)
     expect(res.Status).to.be.equal(200)
