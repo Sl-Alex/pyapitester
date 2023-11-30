@@ -22,6 +22,7 @@ Cons:
 - You need to have Python v3.7+ installed.
 
 Sometimes one picture can say more than thousand words:
+
 ![Sample CLI output](cli_output.png)
 
 And this is an example of the post-request script that tests the response:
