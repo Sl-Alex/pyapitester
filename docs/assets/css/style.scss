@@ -1,0 +1,37 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+body {
+  background: #06090f;
+  font: 16px/1.6 Helvetica,Arial,sans-serif;
+}
+
+#header {
+  background: #161b22;
+  border-bottom: 1px solid #434343;
+}
+
+#header nav ul li a {
+  color: white;
+  border: 1px solid #888;
+  background: linear-gradient(#555, #333);
+  border-radius: 2px;
+  box-shadow: inset 0px 1px 0px rgba(255,255,255,.3), 0px 3px 7px rgba(0,0,0,.7);
+
+  background-color: #333;
+
+  &:hover {
+    background: linear-gradient(#333, #555);
+    background-color: #303030;
+    border: 1px solid #808080;
+    box-shadow: inset 0px 1px 1px rgba(0,0,0,.2), 0px 1px 0px rgba(0,0,0,.0);
+  }
+}
+
+hr {
+  background: #555;
+  height: 1px;
+}
+
