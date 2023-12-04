@@ -39,7 +39,6 @@ Here's an example of a post-request script that tests the response:
 
 ```python
 @test_case("Validate the response")
-
 def validate_the_response():
 
     # You can change 'None' to any other exception type if needed, e.g., 'ConnectTimeout' or 'TooManyRedirects'
@@ -61,8 +60,8 @@ def test_exception():
     expect(res.Status).to.be.equal(200)
 
 @test_case("This Test Should Fail")
-
 def exceptional_test():
     test_exception()
     # You can raise any exception if you want
     #raise FileNotFoundError("Oops, the file is lost")
+```
