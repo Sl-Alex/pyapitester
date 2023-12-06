@@ -5,7 +5,7 @@ import logging
 import re
 import requests
 
-from pyapitester.helpers import AppVars, AppLogger
+from pyapitester.helpers import EnvVars, AppLogger
 
 if sys.version_info < (3, 11):
     import tomli as tomllib
@@ -128,7 +128,7 @@ def test_case(test_name):
         with open(filename, "r") as f:
             self.Source = f.read()
 
-    def prepare(self, app_vars: AppVars):
+    def prepare(self, env_vars: EnvVars):
         self.Headers = {}
         self.Name = self.Path
         self.Url = ''
@@ -136,7 +136,7 @@ def test_case(test_name):
         self.PreRequestScript = ''
         self.PostRequestScript = ''
         self.Body = HttpRequest.HttpBody()
-        self.__reload(app_vars)
+        self.__reload(env_vars)
 
     @staticmethod
     def __wrap_user_script(script: str) -> str:
@@ -166,7 +166,7 @@ def test_case(test_name):
 
         return before + script + after
 
-    def __reload(self, app_vars: AppVars) -> None:
+    def __reload(self, env_vars: EnvVars) -> None:
         """
         Reload the original *.toml file
 
@@ -176,7 +176,7 @@ def test_case(test_name):
 
         AppLogger.log(f'Parsing {self.Path}', logging.DEBUG)
 
-        data: Dict[str, Any] = tomllib.loads(app_vars.replace_vars(self.Source))
+        data: Dict[str, Any] = tomllib.loads(env_vars.replace_vars(self.Source))
 
         # Request section must be there
         if "request" not in data:

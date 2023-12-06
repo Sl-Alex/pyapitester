@@ -1,5 +1,6 @@
+import os.path
 from string import Template
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, List, Any
 import sys
 import logging
 
@@ -9,21 +10,18 @@ else:
     import tomllib
 
 
-class AppVars(object):
+class EnvVars(object):
     """
     TODO: Document
     """
 
     __data: Dict[str, str]
 
-    def __init__(self, filename: Optional[str]):
+    def __init__(self, data: Optional[Dict[str, Any]] = None):
         self.__data = {}
 
-        if filename is None:
+        if data is None:
             return
-
-        with open(filename, "rb") as f:
-            data = tomllib.load(f)
 
         for key in data.keys():
             self.__setitem__(key, data[key])
@@ -67,6 +65,25 @@ class AppVars(object):
         return VariableReplacer(text).safe_substitute(self.__data)
 
 
+class Environment(object):
+
+    env_vars: EnvVars
+
+    def __init__(self, filename: Optional[str]):
+
+        if (filename is not None) and os.path.isfile(filename):
+            env_data: Dict[str, Any] = tomllib.load(open(filename, "rb"))
+        else:
+            env_data = {}
+
+        if "vars" not in env_data:
+            self.env_vars = EnvVars()
+        else:
+            self.env_vars = EnvVars(env_data["vars"])
+
+        # TODO
+
+
 class CustomFormatter(logging.Formatter):
     grey = "\x1b[38;20m"
     yellow = "\x1b[33;20m"
@@ -100,6 +117,7 @@ class AppState(object):
 
     @staticmethod
     def add_test_result(ok: bool):
+
         AppState.TestsTotal += 1
         if ok:
             AppState.TestsOk += 1
@@ -172,6 +190,7 @@ class AppLogger(object):
 
     @staticmethod
     def __log(message: str, level: int = logging.INFO, log_now: bool = False):
+
         if AppLogger.request_in_progress and not log_now:
             AppLogger.log_buffer.append((level, message))
         else:

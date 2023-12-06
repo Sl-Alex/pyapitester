@@ -5,34 +5,34 @@ import requests
 from typing import List, Optional
 from pyapitester.httprequest import HttpRequest
 from pyapitester.httpresponse import HttpResponse
-from pyapitester.helpers import AppLogger, AppVars, AppState
+from pyapitester.helpers import AppLogger, Environment, AppState
 import os
 import json
 
 
 class Runner:
     """
-    Prepares and runs all requests, executes pre- and post-request scriptss
+    Prepares and runs all requests, executes pre- and post-request scripts
     """
 
-    Requests: List[HttpRequest]
-    AppVars: AppVars
+    requests: List[HttpRequest]
+    env: Environment
 
-    def __init__(self, app_vars: AppVars):
-        self.Requests = []
-        self.AppVars = app_vars
+    def __init__(self, env: Environment):
+        self.requests = []
+        self.env = env
 
     def add_request(self, request: HttpRequest):
-        self.Requests.append(request)
+        self.requests.append(request)
 
     def run(self):
         # Always start without any session
         session: Optional[requests.Session] = None
         last_folder = ''
 
-        for req in self.Requests:
+        for req in self.requests:
 
-            req.prepare(self.AppVars)
+            req.prepare(self.env.env_vars)
 
             AppLogger.buffering_start()
 
@@ -53,7 +53,7 @@ class Runner:
 
             exec(req.PreRequestScript, {
                 "req": req,
-                "AppVars": self.AppVars,
+                "EnvVars": self.env.env_vars,
                 "AppLogger": AppLogger,
                 "AppState": AppState
             }, None)
@@ -153,7 +153,7 @@ class Runner:
             exec(req.PostRequestScript, {
                 "req": req,
                 "res": res,
-                "AppVars": self.AppVars,
+                "EnvVars": self.env.env_vars,
                 "AppLogger": AppLogger,
                 "AppState": AppState
             }, None)

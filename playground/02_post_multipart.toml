@@ -67,7 +67,7 @@ id est laborum.'''
 # This section has two scripts: pre-request and post-request
 # pre-request script has access to:
 #     - req (HttpRequest object)
-#     - AppVars (Dictionary with var_name:var_value pairs)
+#     - EnvVars (Dictionary with var_name:var_value pairs)
 #     - AppLogger - log custom messages and test results
 #     - @test_case decorator for the test case functions (see examples below)
 # post-request script has access to the same set of objects, as well as to:

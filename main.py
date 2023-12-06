@@ -3,7 +3,7 @@ import errno
 import fnmatch
 from typing import List
 
-from pyapitester.helpers import AppLogger, AppVars
+from pyapitester.helpers import AppLogger, Environment
 from pyapitester.httprequest import HttpRequest
 from pyapitester.runner import Runner
 import argparse
@@ -29,7 +29,7 @@ if __name__ == '__main__':
         logging.error(f'No such file or directory: "{args.path}"')
         exit(errno.ENOENT)
 
-    if (args.environment is not None) and (not os.path.exists(args.environment)):
+    if (args.environment is not None) and (not os.path.isfile(args.environment)):
         logging.error(f'Environment not found: "{args.environment}"')
         exit(errno.ENOENT)
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
         logging.error(f'Environment file should have *.env extension')
         exit(errno.ENOENT)
 
-    app_vars: AppVars = AppVars(args.environment)
+    env = Environment(args.environment)
 
     # Check if the path is a file or a directory
     file_list: List[str] = []
@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
     if args.command == 'run':
         # Add all requests to the runner
-        runner = Runner(app_vars)
+        runner = Runner(env)
         for filename in file_list_ordered:
             runner.add_request(HttpRequest(filename))
         # Run all requests
