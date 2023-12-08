@@ -6,4 +6,5 @@ title: PyApiTester
 description: A lightweight CLI backend API testing tool
 show_downloads: false
 
-site.url: "https://sl-alex.net/pyapitester"
+site.url: "https://sl-alex.net"
+site.baseurl: "/pyapitester"
