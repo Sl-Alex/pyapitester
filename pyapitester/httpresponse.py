@@ -17,6 +17,9 @@ class HttpResponse:
     Exception: Optional[str]
     """Exception during request processing, None if there is no exception"""
 
+    ExceptionDetails: Optional[str]
+    """Exception details, None if there is no exception"""
+
     Json: Optional[Dict]
 
     Result: bool

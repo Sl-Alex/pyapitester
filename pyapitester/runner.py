@@ -7,6 +7,7 @@ from pyapitester.httprequest import HttpRequest
 from pyapitester.httpresponse import HttpResponse
 from pyapitester.helpers import AppLogger, Environment, AppState
 import os
+import sys
 import json
 
 
@@ -32,44 +33,44 @@ class Runner:
 
         for req in self.requests:
 
-            req.prepare(self.env.env_vars)
-
-            AppLogger.buffering_start()
-
-            folder = os.path.dirname(req.Path)
-
-            # Put our user-agent if missing
-            if "User-Agent" not in req.Headers:
-                req.Headers["User-Agent"] = "PyApiTester/0.1"
-
-            if len(req.PreRequestScript) > 0:
-                AppLogger.log('Executing a pre-request script')
-
-            exec(req.PreRequestScript, {
-                "req": req,
-                "EnvVars": self.env.env_vars,
-                "AppLogger": AppLogger,
-                "AppState": AppState
-            }, None)
-
-            # If session is needed
-            if req.Session:
-                # If session doesn't exist - initialize a new one
-                if session is None:
-                    session = requests.Session()
-                rq = session
-            else:
-                # Session is not needed, close if there is one
-                if session is not None:
-                    session.close()
-                    session = None
-                rq = requests.Session()
-
             res = HttpResponse()
 
-            rq.max_redirects = req.MaxRedirects
-
             try:
+                req.prepare(self.env.env_vars)
+
+                AppLogger.buffering_start()
+
+                folder = os.path.dirname(req.Path)
+
+                # Put our user-agent if missing
+                if "User-Agent" not in req.Headers:
+                    req.Headers["User-Agent"] = "PyApiTester/0.1"
+
+                if len(req.PreRequestScript) > 0:
+                    AppLogger.log('Executing a pre-request script')
+
+                exec(req.PreRequestScript, {
+                    "req": req,
+                    "EnvVars": self.env.env_vars,
+                    "AppLogger": AppLogger,
+                    "AppState": AppState
+                }, None)
+
+                # If session is needed
+                if req.Session:
+                    # If session doesn't exist - initialize a new one
+                    if session is None:
+                        session = requests.Session()
+                    rq = session
+                else:
+                    # Session is not needed, close if there is one
+                    if session is not None:
+                        session.close()
+                        session = None
+                    rq = requests.Session()
+
+                rq.max_redirects = req.MaxRedirects
+
                 if req.Body.Type == HttpRequest.BodyType.MULTIPART:
                     multipart_fields = {}
                     for entry in req.Body.Multipart:
@@ -112,6 +113,7 @@ class Runner:
 
             except Exception as ex:
                 res.Exception = type(ex).__name__
+                res.ExceptionDetails = str(sys.exc_info()[1])
 
             # Go through expected statuses to check if response is OK
             # TODO: By default the response is considered to be OK
@@ -136,6 +138,8 @@ class Runner:
                     res.ResultValue = res.Status
 
             AppLogger.log_header(res.Result, f'Processing {req.Path}', str(res.ResultValue))
+            if res.ExceptionDetails is not None:
+                AppLogger.log(message=res.ExceptionDetails,level=logging.ERROR)
 
             AppState.add_request_result(res.Result)
 
