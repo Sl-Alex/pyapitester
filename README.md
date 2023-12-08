@@ -17,7 +17,7 @@ This will
 - Sort them in the alphabetic order.
 - Run requests one by one, first pre-request script, then the request itself, following by post-request
 
-See [docs][docs] or sl-alex.net/pyapitester for more information.
+See [docs][docs] for more information.
 See [playground][playground] and take a look at test requests and environment.
 
 This is a sample output:
@@ -38,5 +38,5 @@ pip install -r requirements.txt
 As of now, this project is in the very early stage. I'm using it with Python 3.9 and it covers 99% all my needs.
 Any PRs are friendly welcome, I'll be happy if you find this tool useful.
 
-[docs]: docs
+[docs]: https://sl-alex.net/pyapitester
 [playground]: playground
