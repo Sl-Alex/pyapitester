@@ -38,12 +38,6 @@ class Runner:
 
             folder = os.path.dirname(req.Path)
 
-            # Drop the session on folder change
-            if folder != last_folder:
-                if session is not None:
-                    session.close()
-                    session = None
-
             # Put our user-agent if missing
             if "User-Agent" not in req.Headers:
                 req.Headers["User-Agent"] = "PyApiTester/0.1"

@@ -63,24 +63,13 @@ if __name__ == '__main__':
         logging.error('No requests found')
         exit(errno.ENOENT)
 
-    # Order the list
-    # The order should be the following:
-    # 1. ALL files in the folder in the alphabetic order
-    # 2. All folders in the alphabetic order
-
-    file_list_ordered: List[str] = []
-    # Sort folders in the alphabetic order
-    folder_list.sort()
-    for folder_name in folder_list:
-        # Get all files in the folder
-        for filename in file_list:
-            if os.path.dirname(filename) == folder_name:
-                file_list_ordered.append(filename)
+    # Order ALL files and subfolders in the alphabetic order
+    file_list.sort()
 
     if args.command == 'run':
         # Add all requests to the runner
         runner = Runner(env)
-        for filename in file_list_ordered:
+        for filename in file_list:
             runner.add_request(HttpRequest(filename))
         # Run all requests
         runner.run()
