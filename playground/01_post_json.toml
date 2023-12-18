@@ -23,6 +23,16 @@ expected_status = [200, "TooManyRedirects"]
 # Sessions are valid only for requests that are in the same folder
 session = false
 
+[auth]
+
+# Basic auth example
+basic.username = "admin"
+basic.password = "TeMp0r@rY_Pas$w0rd"
+
+# Digest auth
+#digest.username = "admin"
+#digest.password = "TeMp0r@rY_Pas$w0rd"
+
 [headers]
 # According to HTTP specification header names are case-insensitive
 # Internally we convert them to Pascal-Case, for example:

@@ -90,6 +90,7 @@ class Runner:
                     method=req.Method.value,
                     url=req.Url,
                     headers=req.Headers,
+                    auth=req.Auth,
                     data=req.Body.Text,
                     files=multipart_fields,
                     timeout=req.Timeout,

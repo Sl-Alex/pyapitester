@@ -35,6 +35,7 @@ class HttpResponse:
         self.Headers = {}
         self.Status = 0
         self.Exception = None
+        self.ExceptionDetails = None
         self.Size = 0
         self.Json = None
         self.Time = 0

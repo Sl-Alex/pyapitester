@@ -1,9 +1,10 @@
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, List, Any, Union
 from enum import Enum
 import sys
 import logging
 import re
 import requests
+from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 
 from pyapitester.helpers import EnvVars, AppLogger
 
@@ -72,6 +73,8 @@ class HttpRequest:
 
     Timeout: Optional[int]
     """Request timeout, ms. Default system timeout is used if zero."""
+
+    Auth: Optional[Union[HTTPBasicAuth, HTTPDigestAuth]] = None
 
     Session: bool
 
@@ -204,6 +207,28 @@ def test_case(test_name):
             self.Timeout = data["request"]["timeout"] / 1000
 
         AppLogger.log(f'request.timeout = {self.Timeout}', logging.DEBUG)
+
+        # Get the auth
+        if "auth" in data:
+            if "basic" in data["auth"]:
+                if "username" in data["auth"]["basic"] and "password" in data["auth"]["basic"]:
+                    self.Auth = HTTPBasicAuth(
+                        data["auth"]["basic"]["username"],
+                        data["auth"]["basic"]["password"]
+                    )
+                else:
+                    AppLogger.log("Basic auth should have username and password", logging.WARNING)
+            elif "digest" in data["auth"]:
+                if "username" in data["auth"]["digest"] and "password" in data["auth"]["digest"]:
+                    self.Auth = HTTPDigestAuth(
+                        data["auth"]["digest"]["username"],
+                        data["auth"]["digest"]["password"]
+                    )
+                else:
+                    AppLogger.log("Digest auth should have username and password", logging.WARNING)
+            else:
+                # Auth is not basic
+                AppLogger.log("Only basic and digest auth are supported as of now", logging.WARNING)
 
         self.MaxRedirects = data["request"].get("max_redirects")
         if self.MaxRedirects is None:

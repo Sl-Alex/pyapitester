@@ -41,6 +41,16 @@ expected_status = [200, "TooManyRedirects"]
 # or that have "session" set to false will break the session
 session = false
 
+# "auth" secion is optional
+[auth]
+# Basic auth example
+basic.username = "admin"
+basic.password = "TeMp0r@rY_Pas$w0rd"
+
+# Digest auth
+#digest.username = "admin"
+#digest.password = "TeMp0r@rY_Pas$w0rd"
+
 [headers]
 # According to HTTP specification header names are case-insensitive
 # Internally we convert them to Pascal-Case, for example:
