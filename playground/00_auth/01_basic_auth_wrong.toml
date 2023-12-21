@@ -1,0 +1,10 @@
+[auth]
+basic.username = "username"
+basic.password = "Wr0nGp@s$w0rD"
+
+[request]
+url = '{{base_url}}basic-auth/username/passwd'
+method = 'GET'
+
+# Expect HTTP status 401
+expected_status = [401]

@@ -1,0 +1,10 @@
+[auth]
+basic.username = "username"
+basic.password = "passwd"
+
+[request]
+url = '{{base_url}}basic-auth/username/passwd'
+method = 'GET'
+
+# Expect HTTP status 200
+expected_status = [200]

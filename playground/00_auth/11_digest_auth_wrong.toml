@@ -1,0 +1,10 @@
+[auth]
+digest.username = "username"
+digest.password = "Wr0nGp@s$w0rD"
+
+[request]
+url = '{{base_url}}digest-auth/auth/username/passwd'
+method = 'GET'
+
+# Expect HTTP status 401
+expected_status = [401]
