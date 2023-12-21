@@ -98,7 +98,7 @@ class Runner:
                 )
                 res.Status = r.raw.status
                 for k, v in r.raw.headers.items():
-                    res.Headers[k] = v
+                    res.Headers[k.replace("-", " ").title().replace(" ", "-")] = v
 
                 res.Size = len(r.raw.data)
 
