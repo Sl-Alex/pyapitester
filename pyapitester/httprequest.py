@@ -39,11 +39,12 @@ class HttpRequest:
         TEXT = 'text'
 
     class HttpBody:
-        Type: 'HttpRequest.BodyType'
+        Type: Optional['HttpRequest.BodyType']
         Text: Optional[str]
         Multipart: Optional[List['HttpRequest.MultipartField']]
 
         def __init__(self):
+            self.Type = None
             self.Text = None
             self.Multipart = None
 
@@ -257,36 +258,35 @@ def test_case(test_name):
                 self.Headers[header_name] = data["headers"][header]
                 AppLogger.log(f'header: "{header_name}" = "{self.Headers[header_name]}"', logging.DEBUG)
 
-        if "body" not in data:
-            raise ValueError('"body" table is missing')
+        if "body" in data:
 
-        if "type" not in data["body"]:
-            raise ValueError('"body.type" is missing')
+            if "type" not in data["body"]:
+                raise ValueError('"body.type" is missing')
 
-        self.Body.Type = self.BodyType(data["body"]["type"].lower())
-        AppLogger.log(f'body.type = "{self.Body.Type.name}"', logging.DEBUG)
+            self.Body.Type = self.BodyType(data["body"]["type"].lower())
+            AppLogger.log(f'body.type = "{self.Body.Type.name}"', logging.DEBUG)
 
-        if self.Body.Type == self.BodyType.TEXT:
-            if "text" not in data["body"]:
-                AppLogger.log('"text" is missing in the "body" table, although "type" is set to "text"',
-                              logging.WARNING)
-                self.Body.Text = ''
-            else:
-                self.Body.Text = data["body"]["text"]
-                AppLogger.log(f'body.text = "{self.Body.Text}"', logging.DEBUG)
-        elif self.Body.Type == self.BodyType.MULTIPART:
-            multipart_keys = sorted(list(filter(lambda s: "multipart" in s, data.keys())))
-            self.Body.Multipart = []
-            for key in multipart_keys:
-                multipart_entry = HttpRequest.MultipartField()
-                if "name" not in data[key]:
-                    raise KeyError(f'"name" is missing in section "{key}", file {self.Path}')
-                multipart_entry.Name = data[key]["name"]
-                if "data" in data[key]:
-                    multipart_entry.Data = data[key]["data"]
-                if "filename" in data[key]:
-                    multipart_entry.FileName = data[key]["filename"]
-                self.Body.Multipart.append(multipart_entry)
+            if self.Body.Type == self.BodyType.TEXT:
+                if "text" not in data["body"]:
+                    AppLogger.log('"text" is missing in the "body" table, although "type" is set to "text"',
+                                  logging.WARNING)
+                    self.Body.Text = ''
+                else:
+                    self.Body.Text = data["body"]["text"]
+                    AppLogger.log(f'body.text = "{self.Body.Text}"', logging.DEBUG)
+            elif self.Body.Type == self.BodyType.MULTIPART:
+                multipart_keys = sorted(list(filter(lambda s: "multipart" in s, data.keys())))
+                self.Body.Multipart = []
+                for key in multipart_keys:
+                    multipart_entry = HttpRequest.MultipartField()
+                    if "name" not in data[key]:
+                        raise KeyError(f'"name" is missing in section "{key}", file {self.Path}')
+                    multipart_entry.Name = data[key]["name"]
+                    if "data" in data[key]:
+                        multipart_entry.Data = data[key]["data"]
+                    if "filename" in data[key]:
+                        multipart_entry.FileName = data[key]["filename"]
+                    self.Body.Multipart.append(multipart_entry)
 
         if "scripts" in data:
             if "pre-request" in data["scripts"]:
