@@ -1,0 +1,6 @@
+[request]
+url = '{{base_url}}put'
+method = 'PUT'
+
+# Expect HTTP status 200
+expected_status = [200]

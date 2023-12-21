@@ -1,0 +1,13 @@
+[request]
+url = '{{base_url}}'
+method = 'OPTIONS'
+
+# Expect HTTP status 200
+expected_status = [200]
+
+[scripts]
+post-request='''
+@test_case("Check 'Allow' header")
+def check_allow_header():
+    expect(res.Headers).to.have.key("Allow")
+'''

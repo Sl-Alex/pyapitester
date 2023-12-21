@@ -1,0 +1,6 @@
+[request]
+url = '{{base_url}}post'
+method = 'POST'
+
+# Expect HTTP status 200
+expected_status = [200]

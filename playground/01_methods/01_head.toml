@@ -1,0 +1,13 @@
+[request]
+url = '{{base_url}}'
+method = 'HEAD'
+
+# Expect HTTP status 200
+expected_status = [200]
+
+[scripts]
+post-request='''
+@test_case("Check 'Content-Type' header")
+def check_content_type_header():
+    expect(res.Headers).to.have.key("Content-Type")
+'''
