@@ -123,7 +123,7 @@ def test_case(test_name):
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 AppState.add_test_result(False)
                 AppLogger.log_result(False, f'Test case "{test_name}" in function {f.__name__}')
-                logging.warning(f'    Failed with "{exc_type.__name__}" at line {str(exc_tb.tb_next.tb_lineno - 23)}: {__indent(str(exc_obj))}')
+                logging.warning(f'    Failed with "{exc_type.__name__}" at line {str(exc_tb.tb_next.tb_lineno - 25)}: {__indent(str(exc_obj))}')
 
         return wrapped
 
