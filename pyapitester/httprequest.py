@@ -1,3 +1,4 @@
+import os.path
 from typing import Dict, Optional, List, Any, Union
 from enum import Enum
 import sys
@@ -66,6 +67,9 @@ class HttpRequest:
     Path: str
     """A path to the file"""
 
+    FullPath: str
+    """A full path to the file"""
+
     Url: str
     """Request URL"""
 
@@ -128,6 +132,7 @@ def test_case(test_name):
 
     def __init__(self, filename: str):
         self.Path = filename
+        self.FullPath = os.path.abspath(self.Path)
 
         with open(filename, "r") as f:
             self.Source = f.read()
@@ -286,6 +291,12 @@ def test_case(test_name):
                         multipart_entry.Data = data[key]["data"]
                     if "filename" in data[key]:
                         multipart_entry.FileName = data[key]["filename"]
+                        # if "data" entry is not present then a real file will be sent
+                        if multipart_entry.Data is None:
+                            # Calculate absolute path to the file if needed
+                            if not os.path.isabs(multipart_entry.FileName):
+                                multipart_entry.FileName = \
+                                    os.path.join(os.path.dirname(self.FullPath),multipart_entry.FileName)
                     self.Body.Multipart.append(multipart_entry)
 
         if "scripts" in data:
