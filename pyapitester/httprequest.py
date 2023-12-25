@@ -242,7 +242,7 @@ def test_case(test_name):
         self.ExpectedStatuses = data["request"].get("expected_status")
         if self.ExpectedStatuses is None:
             AppLogger.log('expected_status is not set in the "request" table, by default ' +
-                          f'all responses with valid status codes will be considered as OK')
+                          f'all responses with valid status codes will be considered as OK', logging.DEBUG)
         else:
             AppLogger.log(f'request.expected_status = {self.ExpectedStatuses}', logging.DEBUG)
 
