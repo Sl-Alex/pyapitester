@@ -1,0 +1,58 @@
+[request]
+url = '{{base_url}}post'
+method = 'POST'
+
+[body]
+# Body type, either "text" or "multipart"
+type = "multipart"
+
+[multipart-1]
+# This example adds a normal key/value part
+name = "json_data"
+data = '''{
+    "status": "{{test_str}}"
+}'''
+[multipart-2]
+# This example adds the file from the file system.
+# The path is either absolute or relative to the request file 
+name = "file_data"
+filename = "test.txt"
+[multipart-3]
+# This creates a "virtual" file. The file doesn't exist on the file system, but will be sent as such
+name = "virtual_file"
+filename = "virtual.txt"
+data = '''Lorem ipsum dolor sit amet,
+consectetur adipiscing elit,
+sed do eiusmod tempor incididunt
+ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis
+nostrud exercitation ullamco laboris
+nisi ut aliquip ex ea commodo
+consequat. Duis aute irure dolor
+in reprehenderit in voluptate velit
+esse cillum dolore eu fugiat nulla
+pariatur. Excepteur sint occaecat
+cupidatat non proident, sunt in culpa
+qui officia deserunt mollit anim
+id est laborum.'''
+
+[scripts]
+post-request = '''@test_case("Validate multipart-1")
+def validate_multipart_1():
+    expect(res.Json).to.have.key("form")
+    expect(res.Json["form"]).to.have.key("json_data")
+    expect(res.Json["form"]["json_data"]).to.contain("{{test_str}}")
+
+@test_case("Validate multipart-2")
+def validate_multipart_2():
+    expect(res.Json).to.have.key("files")
+    expect(res.Json["files"]).to.have.key("file_data")
+    expect(res.Json["files"]["file_data"]).to.equal("Lorem ipsum dolor sit amet")
+
+@test_case("Validate multipart-3")
+def validate_multipart_3():
+    expect(res.Json).to.have.key("files")
+    expect(res.Json["files"]).to.have.key("virtual_file")
+    expect(res.Json["files"]["virtual_file"]).to.contain("id est laborum")
+
+'''

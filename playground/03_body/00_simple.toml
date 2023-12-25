@@ -1,0 +1,26 @@
+[request]
+url = '{{base_url}}post' # This will result in 'http://httpbin.org/get'
+method = 'POST'
+
+[headers]
+content-type = "application/json; charset=utf-8"
+
+[body]
+# Body type, either "text" or "multipart"
+type = "text"
+text = '''
+{
+    "valid": {{test_bool}},
+    "value": {{test_int}},
+    "status": "{{test_str}}"
+}
+'''
+[scripts]
+post-request = '''
+@test_case("Validate the response")
+def validate_the_response():
+    expect(res.Json["json"]["valid"]).to.be.{{test_bool}}
+    expect(res.Json["json"]["value"]).to.be.equal({{test_int}})
+    expect(res.Json["json"]["status"]).to.be.equal("{{test_str}}")
+    expect(res.Time).to.be.less(1000)
+'''
