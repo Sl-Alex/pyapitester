@@ -1,5 +1,6 @@
 import datetime
 import logging
+import pprint
 
 import requests
 from typing import List, Optional
@@ -145,6 +146,11 @@ class Runner:
             AppState.add_request_result(res.Result)
 
             AppLogger.buffering_end()
+
+            AppLogger.log("Response object:", logging.DEBUG)
+            res_text = pprint.pformat(res.__dict__)
+            for line in res_text.splitlines():
+                AppLogger.log(line, logging.DEBUG)
 
             if len(req.PostRequestScript) > 0:
                 AppLogger.log('Executing a post-request script')
