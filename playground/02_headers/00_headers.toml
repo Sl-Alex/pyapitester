@@ -1,0 +1,27 @@
+[request]
+url = '{{base_url}}post'
+method = 'POST'
+timeout = {{base_timeout}}
+
+# Expect HTTP status 200
+expected_status = [200]
+
+[headers]
+# According to HTTP specification header names are case-insensitive
+# Internally we convert them to Pascal-Case, for example:
+# "cOnTeNt-tYpE" --> "Content-Type"
+# The value remains case-sensitive
+cOnTeNt-tYpE = "text/plain; charset=utf-8"
+
+[scripts]
+post-request = '''
+@test_case("Check response 'Content-Type' header")
+def check_response_content_type():
+    expect(res.Headers).to.have.key("Content-Type")
+    expect(res.Headers["Content-Type"]).to.be.equal("application/json")
+    
+@test_case("Check request 'Content-Type' header")
+def check_request_content_type():
+    expect(res.Json["headers"]).to.have.key("Content-Type")
+    expect(res.Json["headers"]["Content-Type"]).to.be.equal("text/plain; charset=utf-8")
+'''
