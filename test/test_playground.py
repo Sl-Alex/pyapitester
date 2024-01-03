@@ -14,21 +14,21 @@ def check_results(text_output):
 
 
 def test_auth(capfd):
-    os.system(f"main.py run {test_folder}/00_auth -e {test_folder}/{env_file}")
+    os.system(f"python main.py run {test_folder}/00_auth -e {test_folder}/{env_file}")
     text_output = capfd.readouterr().err
     check_results(text_output)
 
 def test_methods(capfd):
-    os.system(f"main.py run {test_folder}/01_methods -e {test_folder}/{env_file}")
+    os.system(f"python main.py run {test_folder}/01_methods -e {test_folder}/{env_file}")
     text_output = capfd.readouterr().err
     check_results(text_output)
 
 def test_headers(capfd):
-    os.system(f"main.py run {test_folder}/02_headers -e {test_folder}/{env_file}")
+    os.system(f"python main.py run {test_folder}/02_headers -e {test_folder}/{env_file}")
     text_output = capfd.readouterr().err
     check_results(text_output)
 
 def test_body(capfd):
-    os.system(f"main.py run {test_folder}/03_body -e {test_folder}/{env_file}")
+    os.system(f"python main.py run {test_folder}/03_body -e {test_folder}/{env_file}")
     text_output = capfd.readouterr().err
     check_results(text_output)
